@@ -1,13 +1,24 @@
-import{IsEmail,IsEnum,IsNotEmpty,IsString,MinLength} from 'class-validator'
+
+import {
+    IsEmail,
+    IsEnum,
+    IsNotEmpty,
+    IsString,
+    MinLength,
+} from 'class-validator';
+
 export class CreateUserDto {
     @IsEmail()
-    email: string;
+    email!: string; // Notice the !
+
     @IsEnum(['admin', 'member'])
-    role: 'admin' | 'member';
+    role!: 'admin' | 'member'; // Notice the !
+
     @IsString()
     @IsNotEmpty()
-    name: String;
+    name!: string; // Notice the !
+
     @IsString()
     @MinLength(6)
-    Password: string
+    password!: string; // Notice the !
 }

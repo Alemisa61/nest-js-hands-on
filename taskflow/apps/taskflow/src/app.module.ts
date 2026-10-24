@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import{ConfigModule} from '@nestjs/config'
+import { PrismaService } from './prisma/prisma.service';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import{ConfigModule} from '@nestjs/config'
       }
     }),UsersModule],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, PrismaService],
 })
 export class AppModule  implements NestModule {
   configure(consumer: MiddlewareConsumer) {
