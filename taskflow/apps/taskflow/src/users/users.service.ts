@@ -4,6 +4,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 import { NotFoundError } from 'rxjs/internal/util/NotFoundError';
+import { GetUsersFilterDto } from './dto/get-users-filter.dto';
 
 @Injectable()
 export class UsersService {
@@ -19,8 +20,17 @@ export class UsersService {
     });
   }
 
-  async findAll() {
-    return this.prisma.user.findMany();
+  async findAll(filterdto: GetUsersFilterDto) {
+    const { role, page, limit } = filterdto
+    const skip = (page - 1) * limit;
+    return this.prisma.user.findMany({
+      where: {
+        role:role? role:undefined
+
+      },
+      skip:skip,
+      take:limit
+    });
   }
 
   async findOne(id: string) {
