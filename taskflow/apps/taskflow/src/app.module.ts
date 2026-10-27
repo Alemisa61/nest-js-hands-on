@@ -8,6 +8,10 @@ import { PrismaService } from './prisma/prisma.service';
 import { AuthModule } from './auth/auth.module';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { HealthModule } from './health/health.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { CacheModule } from '@nestjs/cache-manager';
 
 @Module({
   imports: [
@@ -19,8 +23,16 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
         }
         return envConfig;
       }
-    }), UsersModule, AuthModule,
-  ThrottlerModule.forRoot([{ttl:60000, limit: 10}])],
+    }),
+    ScheduleModule.forRoot(),
+    CacheModule.register({
+      isGlobal:true,
+      ttl:1000
+    }),
+    UsersModule, AuthModule,
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 10 }]),
+  EventEmitterModule.forRoot(),
+  HealthModule],
   controllers: [AppController],
   providers: [AppService, PrismaService
     , {

@@ -1,3 +1,5 @@
+import { Express } from 'express';
+
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -11,7 +13,7 @@ import { GetUsersFilterDto } from './dto/get-users-filter.dto';
 import { UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator } from '@nestjs/common';;
 import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import * as fs from 'fs'
-
+import { CacheInterceptor } from '@nestjs/cache-manager';
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) { }
@@ -50,10 +52,11 @@ export class UsersController {
     // 2. Wrap it in the class
     return new UserEntity(user);
   }
-
+  @UseInterceptors(CacheInterceptor)
   @UseGuards(JwtAuthGuard)
   @Get()
-  async findAll(@Query() filterdto:GetUsersFilterDto) {
+  async findAll(@Query() filterdto: GetUsersFilterDto) {
+    console.log('🛑 DATABASE HIT! Querying all users...')
     const users = await this.usersService.findAll(filterdto);
     // For arrays, we have to map over them to wrap each individual user
     return users.map(user => new UserEntity(user));

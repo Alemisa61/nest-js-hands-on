@@ -1,35 +1,79 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '@app/common';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
+import * as bcrypt from 'bcrypt';
+
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import * as bcrypt from 'bcrypt';
-import { NotFoundError } from 'rxjs/internal/util/NotFoundError';
 import { GetUsersFilterDto } from './dto/get-users-filter.dto';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService ) {}
+  private readonly logger = new Logger(UsersService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2,
+  ) { }
 
   async create(createUserDto: CreateUserDto) {
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-    return this.prisma.user.create({
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: createUserDto.email },
+    });
+
+    if (existingUser) {
+      throw new ConflictException(
+        'A user with this email already exists.',
+      );
+    }
+
+    const hashedPassword = await bcrypt.hash(
+      createUserDto.password,
+      10,
+    );
+
+    const user = await this.prisma.user.create({
       data: {
         ...createUserDto,
         password: hashedPassword,
       },
     });
+
+    this.eventEmitter.emit('user.created', {
+      userId: user.id,
+      email: user.email,
+    });
+
+    const { password, ...safeUser } = user;
+    return safeUser;
+  }
+  // <--- Notice that the create() method STOPS here!
+
+  // Now, add the listener as its own separate method:
+  @OnEvent('user.created')
+  handleUserCreatedEvent(payload: { userId: string; email: string }) {
+    // Make sure it is lowercase 'logger'
+    this.logger.log(`🎉 Event Received! A new user joined: ${payload.email}`);
+    console.log('Event Payload details:', payload);
   }
 
   async findAll(filterdto: GetUsersFilterDto) {
-    const { role, page, limit } = filterdto
+    const { role } = filterdto;
+    const page = filterdto.page ?? 1;
+    const limit = filterdto.limit ?? 10;
     const skip = (page - 1) * limit;
+
     return this.prisma.user.findMany({
       where: {
-        role:role? role:undefined
-
+        role: role || undefined,
       },
-      skip:skip,
-      take:limit
+      skip,
+      take: limit,
     });
   }
 
@@ -38,9 +82,10 @@ export class UsersService {
       where: { id },
     });
   }
+
   async findByEmail(email: string) {
     return this.prisma.user.findUnique({
-      where: { email }
+      where: { email },
     });
   }
 
@@ -53,17 +98,22 @@ export class UsersService {
 
   async remove(id: string) {
     try {
-      const deletedUser = await this.prisma.user.delete({
+      return await this.prisma.user.delete({
         where: { id },
       });
-      return deletedUser;
-    }
-    catch (error) {
-      if ((error as any).code === 'P2025') {
-        throw new NotFoundException(`User with id ${id} does not exist.`);
+    } catch (error) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code === 'P2025'
+      ) {
+        throw new NotFoundException(
+          `User with id ${id} does not exist.`,
+        );
       }
-      throw error
+
+      throw error;
     }
   }
-    
 }

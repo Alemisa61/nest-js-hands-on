@@ -7,6 +7,7 @@ export class UserEntity implements User {
     name: string;
     role: string;
     createdAt: Date;
+    updatedAt: Date;
 
     @Exclude() // THIS is the magic decorator!
     password: string;
