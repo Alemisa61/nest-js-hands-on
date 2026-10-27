@@ -10,5 +10,6 @@ import { CommonModule } from '@app/common';
   imports: [CommonModule],
   controllers: [UsersController],
   providers: [UsersService],
+  exports: [UsersService]
 })
 export class UsersModule {}

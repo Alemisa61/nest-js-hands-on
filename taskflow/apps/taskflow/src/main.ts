@@ -4,8 +4,11 @@ import { ConfigService }  from '@nestjs/config'
 import { ValidationPipe } from '@nestjs/common'
 import { TransformInterceptor } from '@app/common/transform/transform.interceptor'
 import { HttpExceptionFilter } from '@app/common/http-exception/http-exception.filter';
+import helmet from 'helmet';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.enableCors();
+  app.use(helmet());
   const configService = app.get(ConfigService)
   const port = configService.get<number>('PORT') ?? 3000
   app.useGlobalInterceptors(new TransformInterceptor())
@@ -18,3 +21,4 @@ async function bootstrap() {
   console.log(`app is running on port ${port}`);
 }
 bootstrap();
+
